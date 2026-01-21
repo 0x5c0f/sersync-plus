@@ -52,7 +52,7 @@
 - rsync（用于文件同步）
 - inotify-tools（Linux，可选）
 
-### 使用 Poetry（推荐）
+### 方式一：使用 Poetry（推荐开发）
 ```bash
 git clone https://github.com/0x5c0f/sersync-plus.git
 cd sersync-plus
@@ -60,10 +60,24 @@ poetry install
 poetry run sersync-plus --help
 ```
 
-### 使用 pip
+### 方式二：使用 pip
 ```bash
 pip install sersync-plus
 sersync-plus --help
+```
+
+### 方式三：二进制文件（推荐生产）
+```bash
+# 下载预编译的二进制文件
+wget https://github.com/0x5c0f/sersync-plus/releases/latest/download/sersync-plus
+chmod +x sersync-plus
+./sersync-plus --help
+
+# 或者自行构建
+git clone https://github.com/0x5c0f/sersync-plus.git
+cd sersync-plus
+make binary
+./dist/sersync-plus --help
 ```
 
 ### 系统依赖安装
@@ -186,11 +200,67 @@ Sersync Plus 完全兼容原版 sersync 的 XML 配置文件格式，同时扩�
 
 ---
 
+## � 开发与构建
+
+### 开发环境设置
+```bash
+# 克隆项目
+git clone https://github.com/0x5c0f/sersync-plus.git
+cd sersync-plus
+
+# 安装依赖
+make install
+# 或者
+poetry install --with dev
+
+# 运行测试
+make test
+# 或者
+poetry run pytest
+```
+
+### 构建二进制文件
+```bash
+# 方式一：使用 Make（推荐）
+make binary
+
+# 方式二：使用构建脚本
+python scripts/build.py
+
+# 方式三：快速构建
+./scripts/build.sh
+
+# 方式四：手动构建
+poetry run pyinstaller build.spec
+```
+
+### 可用的 Make 命令
+```bash
+make help          # 显示帮助信息
+make install       # 安装依赖
+make test          # 运行测试
+make build         # 构建 Python 包
+make binary        # 构建二进制文件
+make binary-fast   # 快速构建二进制文件
+make clean         # 清理构建文件
+make lint          # 代码质量检查
+make format        # 格式化代码
+make ci            # 完整 CI 流程
+make release       # 发布准备
+```
+
+### 构建输出
+- **Python 包**: `dist/*.whl`
+- **二进制文件**: `dist/sersync-plus`（约 50-80MB）
+- **支持平台**: Linux, macOS, Windows
+
+---
+
 ## 🛠️ 开发
 
 ### 环境设置
 ```bash
-git clone https://github.com/yourusername/sersync-plus.git
+git clone https://github.com/0x5c0f/sersync-plus.git
 cd sersync-plus
 poetry install --with dev
 ```
