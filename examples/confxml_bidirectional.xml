@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<head version="2.5">
+    <!-- Sersync 双向同步配置示例 -->
+
+    <!-- 本地主机配置 -->
+    <host hostip="localhost" port="8008"></host>
+
+    <!-- 调试模式 -->
+    <debug start="true"/>
+
+    <!-- 文件系统类型 -->
+    <fileSystem xfs="false"/>
+
+    <!-- 同步配置 -->
+    <sersync>
+        <!-- 本地监控路径 -->
+        <localpath watch="/data/shared">
+            <!-- 双向同步远程目标 -->
+            <remote ip="192.168.1.100" name="backup" 
+                    mode="bidirectional" 
+                    node_id="node-1"
+                    conflict_strategy="keep_newer" 
+                    sync_interval="60">
+                
+                <!-- 可选：自定义元信息路径（默认会自动生成安全路径） -->
+                <!-- 注意：元信息目录不应放在watch目录内，避免同步冲突 -->
+                <metadata sync_state_dir="/var/sersync/metadata/shared"
+                          conflict_backup_dir="/var/sersync/conflicts/shared"
+                          lock_file="/var/sersync/locks/shared.lock"/>
+            </remote>
+            
+            <!-- 可以同时配置单向同步的远程目标 -->
+            <remote ip="192.168.1.200" name="backup2" mode="unidirectional"/>
+        </localpath>
+
+        <!-- Rsync 配置 -->
+        <rsync>
+            <commonParams params="-artuz"/>
+            <auth start="true" users="rsync_user" passwordfile="/etc/rsync.password"/>
+            <userDefinedPort start="false" port="873"/>
+            <timeout start="true" time="100"/>
+            <ssh start="true" user="root" port="22"/>
+        </rsync>
+
+        <!-- 失败重试 -->
+        <failLog path="/var/sersync/rsync_fail.sh" timeToExecute="60"/>
+
+        <!-- 定时全量同步 -->
+        <crontab start="true" schedule="600">
+            <crontabfilter start="false">
+                <exclude expression="(.*)\.log"/>
+            </crontabfilter>
+        </crontab>
+
+        <!-- 插件系统（预留） -->
+        <plugin start="false" name="command"/>
+    </sersync>
+
+    <!-- 文件过滤 -->
+    <filter start="true">
+        <exclude expression="(.*)\.tmp"/>
+        <exclude expression="(.*)\.swp"/>
+        <exclude expression="(.*)\.log"/>
+        <exclude expression="^\.git"/>
+        <!-- 自动排除可能的元信息目录 -->
+        <exclude expression="\.sersync"/>
+    </filter>
+
+    <!-- Inotify 配置 -->
+    <inotify>
+        <delete start="true"/>
+        <closeWrite start="true"/>
+        <moveFrom start="true"/>
+        <moveTo start="true"/>
+        <attrib start="false"/>
+        <modify start="false"/>
+        <createFolder start="true"/>
+        <createFile start="true"/>
+    </inotify>
+
+    <!-- 定时全量同步 -->
+    <crontab start="true" schedule="600">
+        <crontabfilter start="false">
+            <exclude expression="(.*)\.log"/>
+        </crontabfilter>
+    </crontab>
+
+    <!-- 失败重试 -->
+    <failLog path="/var/sersync/rsync_fail.sh" timeToExecute="60"/>
+
+    <!-- 双向同步全局配置 -->
+    <bidirectional enabled="true" 
+                   default_conflict_strategy="keep_newer"
+                   default_sync_interval="60"
+                   metadata_base_dir="/var/sersync/bidirectional"
+                   enable_conflict_backup="true"
+                   max_conflict_backups="10"/>
+
+    <!-- 通知系统 -->
+    <notification enabled="true" config="/etc/sersync/apprise.yml">
+        <rules>
+            <rule event="sync_failed" notify="immediate" tags="admin,alert"/>
+            <rule event="sync_success" notify="batch" tags="info" batch_size="100" batch_interval="300"/>
+            <rule event="bidirectional_conflict" notify="immediate" tags="admin,conflict"/>
+            <rule event="bidirectional_sync" notify="batch" tags="info" batch_size="50" batch_interval="600"/>
+        </rules>
+
+        <templates>
+            <template name="bidirectional_conflict">
+                <title>⚠️ 双向同步冲突 - {file_path}</title>
+                <body>文件: {file_path}
+冲突类型: {conflict_type}
+解决策略: {resolution_strategy}
+远程节点: {remote}
+时间: {timestamp}</body>
+            </template>
+            
+            <template name="bidirectional_sync">
+                <title>🔄 双向同步完成 - {remote}</title>
+                <body>远程节点: {remote}
+检测到变化: {changes_detected}
+解决冲突: {conflicts_resolved}
+同步文件: {files_synced}
+时间: {timestamp}</body>
+            </template>
+        </templates>
+    </notification>
+
+    <!-- Web 管理界面 -->
+    <web start="true" port="8000" host="0.0.0.0">
+        <auth enabled="true" username="admin" password="admin123"/>
+    </web>
+
+    <!-- 调试模式 -->
+    <debug start="true"/>
+</head>

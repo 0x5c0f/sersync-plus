@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sersync 管理面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .header .status {
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #48bb78;
+            box-shadow: 0 0 10px #48bb78;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: #f56565;
+            box-shadow: 0 0 10px #f56565;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .card-title {
+            font-size: 0.875rem;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: #a0aec0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f6ad55 0%, #ed8936 100%);
+        }
+
+        .progress-fill.danger {
+            background: linear-gradient(90deg, #fc8181 0%, #f56565 100%);
+        }
+
+        .events-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .clear-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .clear-btn:hover {
+            background: #5568d3;
+        }
+
+        .filter-select {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .events-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            padding: 0.875rem;
+            border-bottom: 1px solid #f7fafc;
+            transition: background 0.2s;
+        }
+
+        .event-item:hover {
+            background: #f7fafc;
+        }
+
+        .event-item:last-child {
+            border-bottom: none;
+        }
+
+        .event-type {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 1rem;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .event-type.create {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .event-type.modify {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        .event-type.delete {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .event-type.success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .event-type.failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .event-type.move {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .event-path {
+            flex: 1;
+            color: #4a5568;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.875rem;
+        }
+
+        .event-time {
+            color: #a0aec0;
+            font-size: 0.75rem;
+            margin-left: 1rem;
+        }
+
+        .sync-history-item {
+            display: flex;
+            align-items: center;
+            padding: 0.875rem;
+            border-bottom: 1px solid #f7fafc;
+            transition: background 0.2s;
+        }
+
+        .sync-history-item:hover {
+            background: #f7fafc;
+        }
+
+        .sync-history-item:last-child {
+            border-bottom: none;
+        }
+
+        .sync-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 1rem;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .sync-remote {
+            color: #718096;
+            font-size: 0.75rem;
+            margin-left: 1rem;
+            min-width: 120px;
+        }
+
+        .sync-duration {
+            color: #a0aec0;
+            font-size: 0.75rem;
+            margin-left: 1rem;
+            min-width: 60px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-top: 1px solid #e2e8f0;
+            background: #f7fafc;
+        }
+
+        .pagination-info {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .pagination-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-pages {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .page-btn {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            color: #4a5568;
+            cursor: pointer;
+            min-width: 32px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+
+        .page-btn.ellipsis {
+            cursor: default;
+            border: none;
+            background: transparent;
+        }
+
+        .page-btn.ellipsis:hover {
+            background: transparent;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #a0aec0;
+        }
+
+        .empty-state svg {
+            width: 64px;
+            height: 64px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f7fafc;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #718096;
+            margin-top: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .event-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .event-type {
+                margin-bottom: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Sersync 管理面板</h1>
+        <div class="status">
+            <span class="status-indicator" id="wsIndicator"></span>
+            <span id="wsStatus">连接中...</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 系统指标 -->
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">CPU 使用率</div>
+                <div class="card-value" id="cpuValue">--</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="cpuProgress"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">内存使用率</div>
+                <div class="card-value" id="memoryValue">--</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="memoryProgress"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">磁盘使用率</div>
+                <div class="card-value" id="diskValue">--</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="diskProgress"></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">引擎状态</div>
+                <div class="card-value" id="engineStatus">--</div>
+                <div class="card-subtitle" id="engineUptime">运行时间: --</div>
+            </div>
+        </div>
+
+        <!-- 同步统计 -->
+        <div class="events-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">📊 同步统计</h2>
+                <button class="clear-btn" onclick="refreshSyncHistory()">刷新历史</button>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number" id="totalEvents">0</div>
+                    <div class="stat-label">总事件数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="filesSynced">0</div>
+                    <div class="stat-label">已同步文件</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="queueSize">0</div>
+                    <div class="stat-label">队列大小</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" id="successRate">100%</div>
+                    <div class="stat-label">成功率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 同步历史记录 -->
+        <div class="events-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">📋 同步历史记录</h2>
+                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <select id="historyFilter" onchange="loadSyncHistory()" class="filter-select">
+                        <option value="">全部</option>
+                        <option value="true">成功</option>
+                        <option value="false">失败</option>
+                    </select>
+                    <select id="historyLimit" onchange="loadSyncHistory()" class="filter-select">
+                        <option value="20">20条</option>
+                        <option value="50" selected>50条</option>
+                        <option value="100">100条</option>
+                        <option value="200">200条</option>
+                    </select>
+                    <button class="clear-btn" onclick="loadSyncHistory()">刷新</button>
+                </div>
+            </div>
+            <div class="events-list" id="syncHistoryList">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>加载中...</div>
+                </div>
+            </div>
+            <!-- 分页控制 -->
+            <div class="pagination-controls" id="paginationControls" style="display: none;">
+                <div class="pagination-info">
+                    <span id="paginationInfo">显示 1-50 条，共 0 条记录</span>
+                </div>
+                <div class="pagination-buttons">
+                    <button class="pagination-btn" id="prevBtn" onclick="loadPreviousPage()" disabled>上一页</button>
+                    <span class="pagination-pages" id="paginationPages"></span>
+                    <button class="pagination-btn" id="nextBtn" onclick="loadNextPage()" disabled>下一页</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 实时事件流 -->
+        <div class="events-panel">
+            <div class="panel-header">
+                <h2 class="panel-title">📡 实时事件流</h2>
+                <button class="clear-btn" onclick="clearEvents()">清空</button>
+            </div>
+            <div class="events-list" id="eventsList">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <div>暂无事件</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectTimeout = null;
+        let events = [];
+
+        // 连接 WebSocket
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateConnectionStatus(true);
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleMessage(data);
+                } catch (error) {
+                    console.error('Failed to parse message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                // 5 秒后重连
+                reconnectTimeout = setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // 处理 WebSocket 消息
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'status':
+                    updateStatus(data.data);
+                    break;
+                case 'event':
+                    addEvent(data.data);
+                    break;
+                case 'metrics':
+                    updateMetrics(data.data);
+                    break;
+                default:
+                    console.log('Unknown message type:', data.type);
+            }
+        }
+
+        // 更新连接状态
+        function updateConnectionStatus(connected) {
+            const indicator = document.getElementById('wsIndicator');
+            const status = document.getElementById('wsStatus');
+
+            if (connected) {
+                indicator.classList.remove('disconnected');
+                status.textContent = '已连接';
+            } else {
+                indicator.classList.add('disconnected');
+                status.textContent = '已断开 (5秒后重连)';
+            }
+        }
+
+        // 更新系统状态
+        function updateStatus(data) {
+            // CPU
+            const cpuPercent = data.cpu_percent || 0;
+            document.getElementById('cpuValue').textContent = cpuPercent.toFixed(1) + '%';
+            updateProgress('cpuProgress', cpuPercent);
+
+            // 内存
+            const memoryPercent = data.memory_percent || 0;
+            document.getElementById('memoryValue').textContent = memoryPercent.toFixed(1) + '%';
+            updateProgress('memoryProgress', memoryPercent);
+
+            // 磁盘
+            const diskPercent = data.disk_usage_percent || 0;
+            document.getElementById('diskValue').textContent = diskPercent.toFixed(1) + '%';
+            updateProgress('diskProgress', diskPercent);
+
+            // 引擎状态
+            const running = data.running || false;
+            document.getElementById('engineStatus').textContent = running ? '🟢 运行中' : '🔴 已停止';
+            document.getElementById('engineUptime').textContent = `运行时间: ${data.uptime || '--'}`;
+
+            // 统计数据
+            document.getElementById('totalEvents').textContent = data.total_events || 0;
+            document.getElementById('filesSynced').textContent = data.files_synced || 0;
+            document.getElementById('queueSize').textContent = data.queue_size || 0;
+
+            const successRate = data.success_rate || 100;
+            document.getElementById('successRate').textContent = successRate.toFixed(1) + '%';
+        }
+
+        // 更新进度条
+        function updateProgress(elementId, percent) {
+            const element = document.getElementById(elementId);
+            element.style.width = percent + '%';
+
+            // 根据百分比设置颜色
+            element.className = 'progress-fill';
+            if (percent >= 80) {
+                element.classList.add('danger');
+            } else if (percent >= 60) {
+                element.classList.add('warning');
+            }
+        }
+
+        // 更新性能指标
+        function updateMetrics(data) {
+            // 可以用于更详细的性能图表
+            console.log('Metrics:', data);
+        }
+
+        // 添加事件到列表
+        function addEvent(event) {
+            events.unshift(event);
+            if (events.length > 50) {
+                events.pop(); // 保持最多 50 条
+            }
+            renderEvents();
+        }
+
+        // 渲染事件列表
+        function renderEvents() {
+            const eventsList = document.getElementById('eventsList');
+
+            if (events.length === 0) {
+                eventsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <div>暂无事件</div>
+                    </div>
+                `;
+                return;
+            }
+
+            eventsList.innerHTML = events.map(event => {
+                const typeClass = getEventTypeClass(event.type);
+                const typeLabel = getEventTypeLabel(event.type);
+                const time = formatTime(event.timestamp);
+
+                return `
+                    <div class="event-item">
+                        <span class="event-type ${typeClass}">${typeLabel}</span>
+                        <span class="event-path">${escapeHtml(event.path)}</span>
+                        <span class="event-time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 获取事件类型样式类
+        function getEventTypeClass(type) {
+            const typeMap = {
+                'CREATE': 'create',
+                'MODIFY': 'modify',
+                'CLOSE_WRITE': 'modify',
+                'DELETE': 'delete',
+                'MOVE': 'move',
+                'MOVED_FROM': 'move',
+                'MOVED_TO': 'move'
+            };
+            return typeMap[type] || 'modify';
+        }
+
+        // 获取事件类型标签
+        function getEventTypeLabel(type) {
+            const labelMap = {
+                'CREATE': '创建',
+                'MODIFY': '修改',
+                'CLOSE_WRITE': '写入',
+                'DELETE': '删除',
+                'MOVE': '移动',
+                'MOVED_FROM': '移出',
+                'MOVED_TO': '移入'
+            };
+            return labelMap[type] || type;
+        }
+
+        // 格式化时间
+        function formatTime(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) {
+                return '刚刚';
+            } else if (diff < 3600000) {
+                return Math.floor(diff / 60000) + ' 分钟前';
+            } else {
+                return date.toLocaleTimeString('zh-CN');
+            }
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 清空事件列表
+        function clearEvents() {
+            events = [];
+            renderEvents();
+        }
+
+        // 同步历史分页状态
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalRecords = 0;
+        let currentPageSize = 50;
+
+        // 加载同步历史记录
+        async function loadSyncHistory(page = 1) {
+            const filter = document.getElementById('historyFilter').value;
+            const limit = parseInt(document.getElementById('historyLimit').value);
+            const historyList = document.getElementById('syncHistoryList');
+            
+            currentPage = page;
+            currentPageSize = limit;
+            
+            // 显示加载状态
+            historyList.innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>加载中...</div>
+                </div>
+            `;
+
+            try {
+                let url = `/api/sync-history/paginated?page=${page}&page_size=${limit}`;
+                if (filter) {
+                    url += `&success=${filter}`;
+                }
+
+                const response = await fetch(url);
+                const data = await response.json();
+
+                totalRecords = data.total;
+                totalPages = Math.ceil(totalRecords / limit);
+
+                if (data.entries.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <div>暂无同步记录</div>
+                        </div>
+                    `;
+                    hidePagination();
+                    return;
+                }
+
+                historyList.innerHTML = data.entries.map(item => {
+                    const statusClass = item.success ? 'success' : 'failed';
+                    const statusLabel = item.success ? '成功' : '失败';
+                    const time = formatTime(item.timestamp);
+                    const duration = item.duration_ms ? `${item.duration_ms}ms` : '--';
+                    const remote = `${item.remote_ip}::${item.remote_module}`;
+
+                    return `
+                        <div class="sync-history-item">
+                            <span class="sync-status ${statusClass}">${statusLabel}</span>
+                            <span class="event-type ${getEventTypeClass(item.event_type)}">${getEventTypeLabel(item.event_type)}</span>
+                            <span class="event-path">${escapeHtml(item.file_path)}</span>
+                            <span class="sync-remote">${escapeHtml(remote)}</span>
+                            <span class="sync-duration">${duration}</span>
+                            <span class="event-time">${time}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                // 更新分页控件
+                updatePagination();
+
+            } catch (error) {
+                console.error('Failed to load sync history:', error);
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"></path>
+                        </svg>
+                        <div>加载失败</div>
+                    </div>
+                `;
+                hidePagination();
+            }
+        }
+
+        // 更新分页控件
+        function updatePagination() {
+            const paginationControls = document.getElementById('paginationControls');
+            const paginationInfo = document.getElementById('paginationInfo');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const paginationPages = document.getElementById('paginationPages');
+
+            if (totalPages <= 1) {
+                hidePagination();
+                return;
+            }
+
+            // 显示分页控件
+            paginationControls.style.display = 'flex';
+
+            // 更新信息
+            const startRecord = (currentPage - 1) * currentPageSize + 1;
+            const endRecord = Math.min(currentPage * currentPageSize, totalRecords);
+            paginationInfo.textContent = `显示 ${startRecord}-${endRecord} 条，共 ${totalRecords} 条记录`;
+
+            // 更新按钮状态
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            // 生成页码按钮
+            paginationPages.innerHTML = generatePageButtons();
+        }
+
+        // 生成页码按钮
+        function generatePageButtons() {
+            const maxVisiblePages = 5;
+            let pages = [];
+
+            if (totalPages <= maxVisiblePages) {
+                // 如果总页数不多，显示所有页码
+                for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                }
+            } else {
+                // 复杂的页码逻辑
+                if (currentPage <= 3) {
+                    // 当前页在前面
+                    pages = [1, 2, 3, 4, '...', totalPages];
+                } else if (currentPage >= totalPages - 2) {
+                    // 当前页在后面
+                    pages = [1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+                } else {
+                    // 当前页在中间
+                    pages = [1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages];
+                }
+            }
+
+            return pages.map(page => {
+                if (page === '...') {
+                    return '<span class="page-btn ellipsis">...</span>';
+                } else {
+                    const isActive = page === currentPage ? 'active' : '';
+                    return `<button class="page-btn ${isActive}" onclick="loadSyncHistory(${page})">${page}</button>`;
+                }
+            }).join('');
+        }
+
+        // 隐藏分页控件
+        function hidePagination() {
+            document.getElementById('paginationControls').style.display = 'none';
+        }
+
+        // 加载上一页
+        function loadPreviousPage() {
+            if (currentPage > 1) {
+                loadSyncHistory(currentPage - 1);
+            }
+        }
+
+        // 加载下一页
+        function loadNextPage() {
+            if (currentPage < totalPages) {
+                loadSyncHistory(currentPage + 1);
+            }
+        }
+
+        // 刷新同步历史
+        function refreshSyncHistory() {
+            loadSyncHistory(1); // 重置到第一页
+        }
+
+        // 定期获取状态（fallback，主要靠 WebSocket）
+        function fetchStatus() {
+            fetch('/api/status/current')
+                .then(res => res.json())
+                .then(data => updateStatus(data))
+                .catch(err => console.error('Failed to fetch status:', err));
+        }
+
+        // 初始化
+        connectWebSocket();
+        fetchStatus(); // 立即获取一次状态
+        loadSyncHistory(); // 加载同步历史
+        setInterval(fetchStatus, 10000); // 每 10 秒轮询一次（作为 WebSocket 的备份）
+        setInterval(loadSyncHistory, 30000); // 每 30 秒刷新一次同步历史
+    </script>
+</body>
+</html>

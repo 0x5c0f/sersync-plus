@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+    Sersync Plus - 最小配置示例
+    
+    这是一个最简单的配置文件，包含了运行 Sersync Plus 所需的最基本设置。
+    适用于快速测试和简单的单向同步场景。
+-->
+<head version="2.5">
+    <!-- 本地主机配置 -->
+    <host hostip="localhost" port="8008"/>
+    
+    <!-- 调试模式：生产环境建议设为 false -->
+    <debug start="false"/>
+    
+    <!-- 文件系统类型：大多数情况下保持 false -->
+    <fileSystem xfs="false"/>
+    
+    <!-- 基本文件过滤：排除常见的临时文件和系统文件 -->
+    <filter start="true">
+        <exclude expression="(.*)\.tmp"/>      <!-- 临时文件 -->
+        <exclude expression="(.*)\.swp"/>      <!-- Vim 交换文件 -->
+        <exclude expression="(.*)~"/>          <!-- 备份文件 -->
+        <exclude expression="^\.git"/>         <!-- Git 目录 -->
+    </filter>
+    
+    <!-- 文件事件监听配置 -->
+    <inotify>
+        <delete start="true"/>          <!-- 监听删除事件 -->
+        <createFolder start="true"/>    <!-- 监听目录创建（必须启用） -->
+        <createFile start="false"/>     <!-- 不监听文件创建（由 closeWrite 处理） -->
+        <closeWrite start="true"/>      <!-- 监听文件写入完成（推荐） -->
+        <moveFrom start="true"/>        <!-- 监听文件移出 -->
+        <moveTo start="true"/>          <!-- 监听文件移入 -->
+        <attrib start="false"/>         <!-- 不监听属性变化（性能考虑） -->
+        <modify start="false"/>         <!-- 不监听修改事件（由 closeWrite 处理） -->
+    </inotify>
+    
+    <!-- 同步配置 -->
+    <sersync>
+        <!-- 本地监控路径和远程目标 -->
+        <localpath watch="/data/sync">
+            <!-- 远程同步目标：IP + rsync 模块名 -->
+            <remote ip="192.168.1.100" name="backup"/>
+        </localpath>
+        
+        <!-- Rsync 参数配置 -->
+        <rsync>
+            <!-- 基本参数：-a(归档) -r(递归) -t(时间) -u(更新) -z(压缩) -->
+            <commonParams params="-artuz"/>
+            
+            <!-- 认证配置：如果 rsync 服务器需要认证 -->
+            <auth start="false" users="rsync_user" passwordfile="/etc/rsync.pass"/>
+            
+            <!-- 自定义端口：默认 873 -->
+            <userDefinedPort start="false" port="873"/>
+            
+            <!-- 超时设置：网络不稳定时建议启用 -->
+            <timeout start="false" time="100"/>
+            
+            <!-- SSH 传输：如果使用 SSH 而非 rsync daemon -->
+            <ssh start="false"/>
+        </rsync>
+        
+        <!-- 失败重试：同步失败时的处理脚本 -->
+        <failLog path="/tmp/rsync_fail_log.sh" timeToExecute="60"/>
+        
+        <!-- 定期全量同步：每 600 分钟（10小时）执行一次 -->
+        <crontab start="false" schedule="600"/>
+    </sersync>
+</head>

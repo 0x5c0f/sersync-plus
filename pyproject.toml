@@ -1,0 +1,145 @@
+[tool.poetry]
+name = "sersync-plus"
+version = "0.1.0"
+description = "Enhanced Python implementation of sersync - real-time file synchronization tool with web dashboard, notifications, and bidirectional sync"
+authors = ["0x5c0f <i@0x5c0f.cc>"]
+license = "MIT"
+readme = "README.md"
+homepage = "https://github.com/0x5c0f/sersync-plus"
+repository = "https://github.com/0x5c0f/sersync-plus"
+keywords = ["sersync", "rsync", "inotify", "sync", "file-synchronization", "real-time", "web-dashboard", "bidirectional-sync"]
+packages = [{include = "sersync"}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+# 核心依赖
+click = "^8.1.0"              # CLI 框架
+structlog = "^23.1.0"         # 结构化日志
+python-daemon = "^3.0.0"      # 守护进程
+tenacity = "^8.2.0"           # 重试机制
+pydantic = "^2.0.0"           # 数据验证
+watchdog = "^3.0.0"           # 文件监控（跨平台）
+
+# Linux 专用（inotify 支持）
+pyinotify = {version = "^0.9.6", markers = "sys_platform == 'linux'"}
+
+# Web 管理界面
+fastapi = {version = "^0.109.0", optional = true}
+uvicorn = {extras = ["standard"], version = "^0.27.0", optional = true}
+websockets = {version = "^12.0", optional = true}
+sqlalchemy = {version = "^2.0.0", optional = true}
+aiosqlite = {version = "^0.19.0", optional = true}
+psutil = {version = "^5.9.0", optional = true}
+jinja2 = {version = "^3.1.0", optional = true}
+bcrypt = {version = "^4.1.0", optional = true}
+
+# 通知系统
+apprise = {version = "^1.7.0", optional = true}
+
+[tool.poetry.extras]
+web = ["fastapi", "uvicorn", "websockets", "sqlalchemy", "aiosqlite", "psutil", "jinja2", "bcrypt"]
+notifications = ["apprise"]
+all = ["fastapi", "uvicorn", "websockets", "sqlalchemy", "aiosqlite", "psutil", "jinja2", "bcrypt", "apprise"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.12.0"
+ruff = "^0.1.0"
+mypy = "^1.5.0"
+black = "^23.7.0"
+isort = "^5.12.0"
+
+[tool.poetry.scripts]
+sersync-plus = "sersync.cli:main"
+sersync = "sersync.cli:main"  # 保持兼容性
+sersync-web = "sersync.web.standalone:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+# Ruff 配置
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
+
+# Black 配置
+[tool.black]
+line-length = 100
+target-version = ['py39']
+include = '\.pyi?$'
+
+# isort 配置
+[tool.isort]
+profile = "black"
+line_length = 100
+
+# MyPy 配置
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+
+# Pytest 配置
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=sersync",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+]
+
+# Coverage 配置
+[tool.coverage.run]
+source = ["sersync"]
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

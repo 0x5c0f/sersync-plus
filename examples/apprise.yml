@@ -1,0 +1,154 @@
+# Sersync Plus - Apprise 通知配置示例
+# 
+# 这个文件配置了各种通知服务，支持 100+ 通知平台
+# 更多服务配置请参考：https://github.com/caronc/apprise
+
+# ========== 国内常用服务 ==========
+
+# 企业微信机器人
+# 获取方式：企业微信 -> 群聊 -> 添加机器人 -> 复制 Webhook 地址
+# - wxteams://corpid/corpsecret/agentid
+#   tag: admin,ops
+
+# 钉钉机器人  
+# 获取方式：钉钉群 -> 群设置 -> 机器人 -> 添加机器人
+# - dingtalk://access_token/secret
+#   tag: admin,ops
+
+# 飞书机器人
+# 获取方式：飞书群 -> 设置 -> 机器人 -> 添加机器人
+# - feishu://access_token
+#   tag: admin,ops
+
+# Server酱（微信推送）
+# 获取方式：https://sct.ftqq.com/
+# - schan://sendkey
+#   tag: admin
+
+# PushPlus（微信推送）
+# 获取方式：http://www.pushplus.plus/
+# - pushplus://token
+#   tag: admin
+
+# ========== 国际常用服务 ==========
+
+# Telegram 机器人
+# 获取方式：@BotFather 创建机器人，获取 token 和 chat_id
+# - tg://bottoken/ChatID
+#   tag: admin,alert
+
+# Slack
+# 获取方式：Slack App -> Incoming Webhooks
+# - slack://TokenA/TokenB/TokenC/Channel
+#   tag: ops,monitor
+
+# Discord
+# 获取方式：Discord Server -> 频道设置 -> 整合 -> Webhook
+# - discord://webhook_id/webhook_token
+#   tag: ops
+
+# Microsoft Teams
+# 获取方式：Teams 频道 -> 连接器 -> Incoming Webhook
+# - msteams://webhook_url
+#   tag: admin,ops
+
+# ========== 邮件服务 ==========
+
+# SMTP 邮件（通用）
+# - mailto://user:password@smtp.example.com?to=admin@example.com&from=sersync@example.com
+#   tag: admin,alert,report
+
+# Gmail
+# - mailto://user:password@gmail.com?to=admin@gmail.com
+#   tag: admin,report
+
+# Outlook/Hotmail
+# - mailto://user:password@outlook.com?to=admin@outlook.com
+#   tag: admin,report
+
+# ========== 短信服务 ==========
+
+# Twilio SMS
+# 获取方式：Twilio Console -> Account SID + Auth Token
+# - twilio://AccountSID:AuthToken@FromPhoneNo/ToPhoneNo
+#   tag: alert,critical
+
+# AWS SNS
+# - sns://access_key_id/access_key_secret/region/+1234567890
+#   tag: alert,critical
+
+# ========== 推送服务 ==========
+
+# Pushover
+# 获取方式：https://pushover.net/
+# - pover://user@token
+#   tag: admin,alert
+
+# Pushbullet  
+# 获取方式：https://www.pushbullet.com/
+# - pbul://accesstoken
+#   tag: admin
+
+# Gotify
+# 自建推送服务：https://gotify.net/
+# - gotify://hostname/token
+#   tag: monitor,ops
+
+# Bark（iOS）
+# iOS 推送应用：https://github.com/Finb/Bark
+# - bark://devicekey@hostname
+#   tag: admin
+
+# ========== 示例配置（请根据实际情况修改） ==========
+
+urls:
+  # 企业微信群机器人（管理员通知）
+  # - wxteams://your_corp_id/your_corp_secret/your_agent_id
+  #   tag: admin,ops,alert
+  
+  # 钉钉群机器人（运维通知）
+  # - dingtalk://your_access_token/your_secret
+  #   tag: admin,ops
+  
+  # Telegram 机器人（紧急告警）
+  # - tg://your_bot_token/your_chat_id
+  #   tag: admin,alert,critical
+  
+  # 邮件通知（报告和告警）
+  # - mailto://username:password@smtp.example.com?to=admin@example.com&from=sersync@example.com
+  #   tag: admin,alert,report
+  
+  # Slack 频道（团队协作）
+  # - slack://xoxb-your-token/channel
+  #   tag: ops,monitor
+  
+  # 短信通知（严重告警）
+  # - twilio://account_sid:auth_token@from_number/to_number
+  #   tag: critical
+
+# ========== 标签说明 ==========
+#
+# admin    - 管理员通知（同步失败、系统异常）
+# ops      - 运维通知（批量同步、性能告警）  
+# alert    - 告警通知（失败、冲突、异常）
+# monitor  - 监控通知（成功统计、批量事件）
+# report   - 报告通知（每日摘要、统计报告）
+# critical - 严重告警（系统崩溃、数据丢失）
+#
+# 可以为同一个服务配置多个标签，用逗号分隔
+
+# ========== 使用说明 ==========
+#
+# 1. 取消注释并填写你需要的服务配置
+# 2. 替换示例中的 token、密钥等信息
+# 3. 根据需要调整标签分组
+# 4. 在 confxml.xml 中启用通知系统：
+#    <notification enabled="true">
+#        <apprise_config path="/etc/sersync/apprise.yml"/>
+#    </notification>
+# 5. 重启 Sersync Plus 使配置生效
+
+# ========== 测试配置 ==========
+#
+# 可以使用以下命令测试通知配置：
+# apprise -vv -t "测试标题" -b "测试消息" --config=/etc/sersync/apprise.yml --tag=admin
